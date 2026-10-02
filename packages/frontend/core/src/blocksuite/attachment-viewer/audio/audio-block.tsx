@@ -5,7 +5,6 @@ import {
   useConfirmModal,
 } from '@affine/component';
 import { AudioPlayer } from '@affine/component/ui/audio-player';
-import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useSeekTime } from '@affine/core/components/hooks/use-seek-time';
 import { CurrentServerScopeProvider } from '@affine/core/components/providers/current-server-scope';
@@ -75,12 +74,11 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
 
   const t = useI18n();
 
-  const enableAi = useEnableAI();
 
   const globalDialogService = useService(GlobalDialogService);
 
   const handleNotesClick = useAsyncCallback(async () => {
-    if (!enableAi || transcribing) {
+    if (transcribing) {
       return;
     }
 
@@ -145,7 +143,7 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
       });
     }
   }, [
-    enableAi,
+    
     transcribing,
     transcribed,
     block,
@@ -155,49 +153,10 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     globalDialogService,
   ]);
 
-  const notesEntry = useMemo(() => {
-    if (!enableAi) {
-      return null;
-    }
-    const inner = (
-      <Button
-        variant="plain"
-        prefix={
-          <AnimatedTranscribeIcon
-            state={transcribing ? 'transcribing' : 'idle'}
-          />
-        }
-        size="large"
-        prefixClassName={styles.notesButtonIcon}
-        className={styles.notesButton}
-        onClick={handleNotesClick}
-      >
-        {transcribing
-          ? t['com.affine.audio.transcribing']()
-          : t['com.affine.audio.notes']()}
-      </Button>
-    );
-    if (transcribing) {
-      return (
-        <Tooltip content={t['com.affine.audio.transcribing']()}>
-          {inner}
-        </Tooltip>
-      );
-    }
-    return inner;
-  }, [enableAi, transcribing, handleNotesClick, t]);
 
   const descriptionEntry = useMemo(() => {
     if (loadingError) {
-      return (
-        <>
-          <div className={styles.error}>{loadingError.message}</div>
-          <button className={styles.reloadButton} onClick={reload}>
-            <ResetIcon className={styles.reloadButtonIcon} />
-            Reload
-          </button>
-        </>
-      );
+      
     }
 
     if (!loading && error) {
@@ -223,9 +182,7 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
       onSeek={handleSeek}
       playbackRate={playbackState?.playbackRate || 1.0}
       onPlaybackRateChange={handlePlaybackRateChange}
-      notesEntry={
-        <CurrentServerScopeProvider>{notesEntry}</CurrentServerScopeProvider>
-      }
+      
     />
   );
 };

@@ -1,14 +1,7 @@
 import { configureQuotaModule } from '@affine/core/modules/quota';
 import { type Framework } from '@toeverything/infra';
 
-import {
-  configureAIButtonModule,
-  configureAIDraftModule,
-  configureAIModelModule,
-  configureAIPlaygroundModule,
-  configureAIReasoningModule,
-  configureAIToolsConfigModule,
-} from './ai-button';
+
 import { configureAppSidebarModule } from './app-sidebar';
 import { configAtMenuConfigModule } from './at-menu-config';
 import { configureBlobManagementModule } from './blob-management';
@@ -117,12 +110,6 @@ export function configureCommonModules(framework: Framework) {
   configSearchMenuModule(framework);
   configureDndModule(framework);
   configureCommonGlobalStorageImpls(framework);
-  configureAIReasoningModule(framework);
-  configureAIPlaygroundModule(framework);
-  configureAIButtonModule(framework);
-  configureAIDraftModule(framework);
-  configureAIToolsConfigModule(framework);
-  configureAIModelModule(framework);
   configureTemplateDocModule(framework);
   configureBlobManagementModule(framework);
   configureMediaModule(framework);
