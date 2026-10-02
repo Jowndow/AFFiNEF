@@ -1,5 +1,4 @@
 import { notify } from '@affine/component';
-import { isMindmapChild, isMindMapRoot } from '@affine/core/blocksuite/ai';
 import { EditorService } from '@affine/core/modules/editor';
 import { apis } from '@affine/electron-api';
 import { I18n } from '@affine/i18n';
@@ -130,8 +129,7 @@ export function copyAsImage(std: BlockStdScope) {
   const mindmapId = maybeMindmap.group?.id;
   if (
     selected.length === 1 &&
-    mindmapId &&
-    (isMindMapRoot(maybeMindmap) || isMindmapChild(maybeMindmap))
+    mindmapId
   ) {
     gfx.selection.set({ elements: [mindmapId] });
   }

@@ -1,9 +1,5 @@
 import { MenuSeparator } from '@affine/component';
-import {
-  handleInlineAskAIAction,
-  pageAIGroups,
-} from '@affine/core/blocksuite/ai';
-import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
+
 import { DocsService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { TemplateDocService } from '@affine/core/modules/template-doc';
@@ -70,7 +66,6 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
       [doc.id, templateDocService.list]
     )
   );
-  const enableAI = useEnableAI();
 
   const handleSelectTemplate = useAsyncCallback(
     async (templateId: string) => {
@@ -106,64 +101,19 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
       const subscription = std.view.viewUpdated.subscribe(v => {
         if (v.id === id) {
           subscription.unsubscribe();
-          handleInlineAskAIAction(std.host, pageAIGroups);
         }
       });
     } else {
-      handleInlineAskAIAction(std.host, pageAIGroups);
     }
   }, [editorService.editor]);
 
   const showTemplate = !isTemplate;
 
-  if (!enableAI && !showTemplate) {
+  if (!showTemplate) {
     return null;
   }
 
-  return (
-    <div className={styles.root} data-testid="starter-bar">
-      {t['com.affine.page-starter-bar.start']()}
-      <ul className={styles.badges}>
-        {enableAI ? (
-          <Badge
-            data-testid="start-with-ai-badge"
-            icon={<AiIcon className={styles.aiIcon} />}
-            text={t['com.affine.page-starter-bar.ai']()}
-            onClick={startWithAI}
-          />
-        ) : null}
-
-        {showTemplate ? (
-          <TemplateListMenu
-            onSelect={handleSelectTemplate}
-            rootOptions={{
-              open: templateMenuOpen,
-              onOpenChange: onTemplateMenuOpenChange,
-            }}
-            suffixItems={
-              <>
-                <MenuSeparator />
-                <TemplateListMenuAdd />
-              </>
-            }
-          >
-            <Badge
-              data-testid="template-docs-badge"
-              icon={<TemplateColoredIcon />}
-              text={t['com.affine.page-starter-bar.template']()}
-              active={templateMenuOpen}
-            />
-          </TemplateListMenu>
-        ) : null}
-
-        <Badge
-          icon={<EdgelessIcon />}
-          text={t['com.affine.page-starter-bar.edgeless']()}
-          onClick={startWithEdgeless}
-        />
-      </ul>
-    </div>
-  );
+  
 };
 
 export const StarterBar = ({ doc }: { doc: Store }) => {

@@ -30,11 +30,10 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
   const stats = useLiveData(audioMedia.stats$);
   const expanded = useLiveData(block.expanded$);
   const [preflightChecking, setPreflightChecking] = useState(false);
-  const transcribing =
-    useLiveData(block.transcriptionJob.transcribing$) || preflightChecking;
+  const transcribing = false
   const loading = useLiveData(audioMedia.loading$);
   const loadingError = useLiveData(audioMedia.loadError$);
-  const error = useLiveData(block.transcriptionJob.error$);
+  const error = false
   const transcribed = useLiveData(block.hasTranscription$);
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -92,56 +91,19 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
       return;
     }
 
-    if (!block.transcriptionJob.currentUserId) {
-      confirmModal.openConfirmModal({
-        title: t['com.affine.ai.login-required.dialog-title'](),
-        description: t['com.affine.ai.login-required.dialog-content'](),
-        confirmText: t['com.affine.ai.login-required.dialog-confirm'](),
-        confirmButtonOptions: {
-          variant: 'primary',
-        },
-        cancelText: t['com.affine.ai.login-required.dialog-cancel'](),
-        onConfirm: () => {
-          globalDialogService.open('sign-in', {});
-        },
-      });
-      track.doc.editor.audioBlock.openTranscribeNotes({
-        type: 'Meeting record',
-        method: 'not signed in',
-      });
-      return;
-    }
+    
 
     setPreflightChecking(true);
     const result = await block.transcribe().finally(() => {
       setPreflightChecking(false);
     });
-    if (result?.status === 'blocked') {
-      confirmModal.openConfirmModal({
-        title: t['com.affine.audio.transcribe.non-owner.confirm.title'](),
-        description: (
-          <Trans i18nKey="com.affine.audio.transcribe.non-owner.confirm.message">
-            Please contact <PublicUserLabel id={result.userId} /> to upgrade AI
-            rights or resend the attachment.
-          </Trans>
-        ),
-        onCancel: false,
-        confirmText: t['Confirm'](),
-        confirmButtonOptions: {
-          variant: 'primary',
-        },
-      });
-      track.doc.editor.audioBlock.openTranscribeNotes({
-        type: 'Meeting record',
-        method: 'not owner',
-      });
-    } else {
+    
       track.doc.editor.audioBlock.transcribeRecording({
         type: 'Meeting record',
         method: 'success',
         option: 'handle transcribing',
       });
-    }
+    
   }, [
     
     transcribing,
@@ -160,7 +122,7 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     }
 
     if (!loading && error) {
-      return <div className={styles.error}>{error.message}</div>;
+      return <div className={styles.error}>{"error.message"}</div>;
     }
 
     return <>{bytes(block.props.props.size)}</>;

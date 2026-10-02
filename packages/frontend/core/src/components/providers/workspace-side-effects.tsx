@@ -3,11 +3,7 @@ import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
-import {
-  AIAppEvents,
-  createAIRequestService,
-  setupAIProvider,
-} from '@affine/core/blocksuite/ai';
+
 import { useRegisterFindInPageCommands } from '@affine/core/components/hooks/affine/use-register-find-in-page-commands';
 import { useRegisterWorkspaceCommands } from '@affine/core/components/hooks/use-register-workspace-commands';
 import { OverCapacityNotification } from '@affine/core/components/over-capacity';
@@ -106,14 +102,9 @@ export const WorkspaceSideEffects = () => {
       })
     );
 
-    const disposable = AIAppEvents.requestInsertTemplate.subscribe(
-      ({ template, mode }) => {
-        insertTemplate({ template, mode });
-      }
-    );
+    
 
     return () => {
-      disposable.unsubscribe();
       insertTemplate.unsubscribe();
     };
   }, [
@@ -129,14 +120,9 @@ export const WorkspaceSideEffects = () => {
   const globalDialogService = useService(GlobalDialogService);
 
   useEffect(() => {
-    const disposable = AIAppEvents.requestUpgradePlan.subscribe(() => {
-      workspaceDialogService.open('setting', {
-        activeTab: 'billing',
-      });
-      track.$.paywall.aiAction.viewPlans();
-    });
+    
     return () => {
-      disposable.unsubscribe();
+      
     };
   }, [workspaceDialogService]);
 
@@ -170,24 +156,9 @@ export const WorkspaceSideEffects = () => {
   }, [realtimeConnectionError, t]);
 
   useEffect(() => {
-    const dispose = setupAIProvider(
-      createAIRequestService(
-        graphqlService.gql,
-        eventSourceService.eventSource,
-        nbstoreService.realtime,
-        async docIds => {
-          await Promise.all(
-            [currentWorkspace.id, 'db$docProperties', ...docIds].map(docId =>
-              currentWorkspace.engine.doc.waitForSynced(docId)
-            )
-          );
-        }
-      ),
-      globalDialogService,
-      authService
-    );
+    
     return () => {
-      dispose();
+      
     };
   }, [
     currentWorkspace.engine.doc,

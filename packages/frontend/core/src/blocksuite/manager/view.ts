@@ -1,5 +1,4 @@
 import type { ReactToLit } from '@affine/component';
-import { AIViewExtension } from '@affine/core/blocksuite/view-extensions/ai';
 import { CloudViewExtension } from '@affine/core/blocksuite/view-extensions/cloud';
 import { CodeBlockPreviewViewExtension } from '@affine/core/blocksuite/view-extensions/code-block-preview';
 import { CommentViewExtension } from '@affine/core/blocksuite/view-extensions/comment';
@@ -57,7 +56,6 @@ type Configure = {
   turboRenderer: (enableTurboRenderer?: boolean) => Configure;
   pdf: (enablePDFEmbedPreview?: boolean, reactToLit?: ReactToLit) => Configure;
   mobile: (framework?: FrameworkProvider) => Configure;
-  ai: (enable?: boolean, framework?: FrameworkProvider) => Configure;
   electron: (framework?: FrameworkProvider) => Configure;
   linkPreview: (framework?: FrameworkProvider) => Configure;
   codeBlockPreview: (framework?: FrameworkProvider) => Configure;
@@ -97,7 +95,6 @@ class ViewProvider {
       CloudViewExtension,
       PdfViewExtension,
       MobileViewExtension,
-      AIViewExtension,
       ElectronViewExtension,
       AffineLinkPreviewExtension,
       AffineDatabaseViewExtension,
@@ -124,7 +121,6 @@ class ViewProvider {
       turboRenderer: this._configureTurboRenderer,
       pdf: this._configurePdf,
       mobile: this._configureMobile,
-      ai: this._configureAI,
       electron: this._configureElectron,
       linkPreview: this._configureLinkPreview,
       codeBlockPreview: this._configureCodeBlockHtmlPreview,
@@ -148,7 +144,7 @@ class ViewProvider {
       .turboRenderer()
       .pdf()
       .mobile()
-      .ai()
+      
       .electron()
       .linkPreview()
       .codeBlockPreview()
@@ -267,7 +263,7 @@ class ViewProvider {
       this._manager.configure(ParagraphViewExtension, {
         getPlaceholder: model => {
           const placeholders = {
-            text: "Type '/' for commands, 'space' for AI",
+            text: "Type '/' for commands",
             h1: 'Heading 1',
             h2: 'Heading 2',
             h3: 'Heading 3',
@@ -316,14 +312,7 @@ class ViewProvider {
     return this.config;
   };
 
-  private readonly _configureAI = (
-    enable?: boolean,
-    framework?: FrameworkProvider
-  ) => {
-    this._manager.configure(AIViewExtension, { framework, enable });
-    return this.config;
-  };
-
+  
   private readonly _configureElectron = (framework?: FrameworkProvider) => {
     this._manager.configure(ElectronViewExtension, { framework });
     return this.config;

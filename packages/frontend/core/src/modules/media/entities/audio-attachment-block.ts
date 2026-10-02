@@ -1,7 +1,4 @@
-import {
-  TranscriptionBlockFlavour,
-  type TranscriptionBlockModel,
-} from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
+
 import { insertFromMarkdown } from '@affine/core/blocksuite/utils';
 import { preprocessAudioBlobForTranscription } from '@affine/core/utils/opus-encoding';
 import { DebugLogger } from '@affine/debug';
@@ -21,7 +18,6 @@ import { AudioTranscriptionJob } from './audio-transcription-job';
 import type { TranscriptionResult } from './types';
 
 const logger = new DebugLogger('audio-attachment-block');
-type TranscriptionBlockProps = TranscriptionBlockModel['props'];
 
 // BlockSuiteError: yText must not contain "\r" because it will break the range synchronization
 function sanitizeText(text: string) {
@@ -29,12 +25,7 @@ function sanitizeText(text: string) {
 }
 
 function requireTranscriptionBlockProps(
-  transcriptionBlockProps: TranscriptionBlockProps | undefined
 ) {
-  if (!transcriptionBlockProps) {
-    throw new Error('No transcription block props');
-  }
-  return transcriptionBlockProps;
 }
 
 const colorOptions = [
@@ -62,7 +53,6 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
     this.audioMedia = mediaRef.media;
     this.disposables.push(() => mediaRef.release());
     this.disposables.push(() => {
-      this.transcriptionJob.dispose();
     });
   }
 
@@ -76,9 +66,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       // find the last transcription block
       for (const key of [...this.props.childMap.value.keys()].reverse()) {
         const block = this.props.store.getBlock$(key);
-        if (block?.flavour === TranscriptionBlockFlavour) {
-          return block.model as unknown as TranscriptionBlockModel;
-        }
+        
       }
       return null;
     })
@@ -89,22 +77,12 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
     if (!transcriptionBlock) {
       return null;
     }
-    const childMap = get(LiveData.fromSignal(transcriptionBlock.childMap));
-    return childMap.size > 0;
+    
   });
 
-  transcriptionJob: AudioTranscriptionJob = this.createTranscriptionJob();
 
   mount() {
-    if (
-      this.transcriptionJob.isCreator() &&
-      this.transcriptionJob.status$.value.status === 'waiting-for-job' &&
-      !this.hasTranscription$.value
-    ) {
-      this.resumeTranscription().catch(error => {
-        logger.error('Error transcribing audio:', error);
-      });
-    }
+    
 
     this.refCount$.setValue(this.refCount$.value + 1);
   }
@@ -118,77 +96,12 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       throw new Error('No source id');
     }
 
-    let transcriptionBlockProps = this.transcriptionBlock$.value?.props;
-
-    if (!transcriptionBlockProps) {
-      // transcription block is not created yet, we need to create it
-      this.props.store.addBlock(
-        'affine:transcription',
-        {
-          transcription: {},
-        },
-        this.props.id
-      );
-      transcriptionBlockProps = this.transcriptionBlock$.value?.props;
-    }
-
-    const job = this.framework.createEntity(AudioTranscriptionJob, {
-      blobId: this.props.props.sourceId,
-      blockProps: requireTranscriptionBlockProps(transcriptionBlockProps),
-      getAudioTranscriptionInput: async () => {
-        const buffer = await this.audioMedia.getBuffer();
-        if (!buffer) {
-          throw new Error('No audio buffer available');
-        }
-        const currentTranscriptionBlockProps = requireTranscriptionBlockProps(
-          this.transcriptionBlock$.value?.props
-        );
-        const { files, sourceAudio, sliceManifest } =
-          await preprocessAudioBlobForTranscription(buffer, {
-            fileNameBase: this.props.props.name,
-            sourceMimeType: this.props.props.type,
-            targetBitrate: 64000,
-          });
-
-        return {
-          files,
-          input: {
-            sourceAudio: {
-              ...sourceAudio,
-              ...currentTranscriptionBlockProps.transcription.sourceAudio,
-            },
-            quality: currentTranscriptionBlockProps.transcription.quality,
-            sliceManifest,
-          },
-        };
-      },
-    });
-
-    return job;
+  
+    
   }
 
   private readonly runTranscription = async (retryFailed: boolean) => {
-    try {
-      const initialStatus = this.transcriptionJob.status$.value.status;
-      if (initialStatus !== 'waiting-for-job' && initialStatus !== 'failed') {
-        return;
-      }
-      const status = await this.transcriptionJob.start(retryFailed);
-      if (status.status === 'blocked') {
-        return status;
-      }
-      if (status.status === 'settled') {
-        await this.fillTranscriptionResult(status.result);
-      }
-      return status;
-    } catch (error) {
-      track.doc.editor.audioBlock.transcribeRecording({
-        type: 'Meeting record',
-        method: 'fail',
-      });
-      logger.error('Error transcribing audio:', error);
-      throw error;
-    }
+    
   };
 
   readonly resumeTranscription = () => this.runTranscription(false);
@@ -198,97 +111,6 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
   private readonly fillTranscriptionResult = async (
     result: TranscriptionResult
   ) => {
-    this.props.props.caption = result.title ?? '';
-
-    const addCalloutBlock = (
-      emoji: string,
-      title: string,
-      collapsed: boolean = false
-    ) => {
-      const calloutId = this.props.store.addBlock(
-        'affine:callout',
-        {
-          emoji,
-        },
-        this.transcriptionBlock$.value?.id
-      );
-      this.props.store.addBlock(
-        'affine:paragraph',
-        {
-          type: 'h6',
-          collapsed,
-          text: new Text([
-            {
-              insert: title,
-            },
-          ]),
-        },
-        calloutId
-      );
-      return calloutId;
-    };
-    const fillTranscription = (segments: TranscriptionResult['segments']) => {
-      const calloutId = addCalloutBlock('💬', 'Transcript', true);
-
-      const speakerToColors = new Map<string, string>();
-      for (const segment of segments) {
-        let color = speakerToColors.get(segment.speaker);
-        if (!color) {
-          color = colorOptions[speakerToColors.size % colorOptions.length];
-          speakerToColors.set(segment.speaker, color);
-        }
-        const deltaInserts: DeltaInsert<AffineTextAttributes>[] = [
-          {
-            insert: sanitizeText(segment.start + ' ' + segment.speaker),
-            attributes: {
-              color,
-              bold: true,
-            },
-          },
-          {
-            insert: ': ' + sanitizeText(segment.transcription),
-          },
-        ];
-        this.props.store.addBlock(
-          'affine:paragraph',
-          {
-            text: new Text(deltaInserts),
-          },
-          calloutId
-        );
-      }
-    };
-
-    const fillSummary = async (summary: TranscriptionResult['summary']) => {
-      const calloutId = addCalloutBlock('📑', 'Summary');
-      await insertFromMarkdown(
-        undefined,
-        summary,
-        this.props.store,
-        calloutId,
-        1
-      );
-    };
-
-    const fillActions = async (actions: TranscriptionResult['actions']) => {
-      if (!actions) {
-        return;
-      }
-      const calloutId = addCalloutBlock('🎯', 'Todo');
-      await insertFromMarkdown(
-        undefined,
-        actions ?? '',
-        this.props.store,
-        calloutId,
-        1
-      );
-    };
-    fillTranscription(result.segments);
-    if (this.meetingSettingsService.settings.autoTranscriptionSummary) {
-      await fillSummary(result.summary);
-    }
-    if (this.meetingSettingsService.settings.autoTranscriptionTodo) {
-      await fillActions(result.actions);
-    }
+    
   };
 }

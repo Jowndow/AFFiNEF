@@ -11,7 +11,6 @@ import {
   type ReferenceReactRenderer,
 } from '@affine/core/blocksuite/view-extensions/editor-view/reference-renderer';
 import { useGuard } from '@affine/core/components/guard';
-import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import { DocService } from '@affine/core/modules/doc';
 import {
   type Backlink,
@@ -51,7 +50,6 @@ import {
   AffinePageReference,
   AffineSharedPageReference,
 } from '../../components/affine/reference-link';
-import { LitTextRenderer } from '../ai/components/text-renderer';
 import * as styles from './bi-directional-link-panel.css';
 
 const PREFIX = 'bi-directional-link-panel-collapse:';
@@ -166,23 +164,20 @@ const usePreviewExtensions = () => {
     };
   }, [workspaceService]);
 
-  const enableAI = useEnableAI();
 
   const extensions = useMemo(() => {
     const manager = getViewManager()
       .config.init()
       .foundation(framework)
-      .ai(enableAI, framework)
       .theme(framework)
       .database(framework)
       .iconPicker(framework)
       .linkedDoc(framework)
-      .paragraph(enableAI)
       .linkPreview(framework)
       .codeBlockPreview(framework).value;
     const specs = manager.get('preview-page');
     return [...specs, patchReferenceRenderer(reactToLit, referenceRenderer)];
-  }, [reactToLit, referenceRenderer, framework, enableAI]);
+  }, [reactToLit, referenceRenderer, framework]);
 
   return [extensions, portals] as const;
 };
@@ -384,7 +379,7 @@ export const LinkPreview = ({
               track.doc.biDirectionalLinksPanel.backlinkPreview.navigate();
             }}
           >
-            {edgelessLink ? (
+            
               <>
                 [Edgeless]
                 <AffinePageReference
@@ -393,13 +388,7 @@ export const LinkPreview = ({
                   params={searchParams}
                 />
               </>
-            ) : (
-              <LitTextRenderer
-                className={styles.linkPreviewRenderer}
-                answer={link.markdownPreview}
-                options={textRendererOptions}
-              />
-            )}
+            
           </WorkbenchLink>
         );
       })}

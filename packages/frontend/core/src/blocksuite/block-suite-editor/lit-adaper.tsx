@@ -10,7 +10,6 @@ import {
   type PageEditor,
 } from '@affine/core/blocksuite/editors';
 import { getViewManager } from '@affine/core/blocksuite/manager/view';
-import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import { ServerService } from '@affine/core/modules/cloud';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import type {
@@ -71,7 +70,6 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
 
   const confirmModal = useConfirmModal();
 
-  const enableAI = useEnableAI();
 
   const isInPeekView = useInsidePeekView();
 
@@ -94,7 +92,6 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
     const manager = getViewManager()
       .config.init()
       .foundation(framework)
-      .ai(enableAI, framework)
       .theme(framework)
       .editorConfig(framework)
       .editorView({
@@ -112,7 +109,6 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
       })
       .database(framework)
       .linkedDoc(framework)
-      .paragraph(enableAI)
       .mobile(framework)
       .electron(framework)
       .linkPreview(framework)
@@ -131,7 +127,6 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
     }
   }, [
     confirmModal,
-    enableAI,
     enablePDFEmbedPreview,
     enableTurboRenderer,
     enableComment,

@@ -1,6 +1,5 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
-import { AIAppEvents, type AIChatParams } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
@@ -9,7 +8,6 @@ import { GlobalPageHistoryModal } from '@affine/core/components/affine/page-hist
 import { CommentSidebar } from '@affine/core/components/comment/sidebar';
 import { useGuard } from '@affine/core/components/guard';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
-import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import { useRegisterBlocksuiteEditorCommands } from '@affine/core/components/hooks/affine/use-register-blocksuite-editor-commands';
 import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
@@ -111,8 +109,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
 
-  const enableAI = useEnableAI();
-
   const featureFlagService = useService(FeatureFlagService);
   const enableAdapterPanel = useLiveData(
     featureFlagService.flags.enable_adapter_panel.$
@@ -137,15 +133,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   useEffect(() => {
     const disposables: Subscription[] = [];
-    const openHandler = (params: AIChatParams | null) => {
-      if (!params) {
-        return;
-      }
-      workbench.openSidebar();
-      view.activeSidebarTab('chat');
-    };
-    disposables.push(AIAppEvents.requestOpenWithChat.subscribe(openHandler));
-    disposables.push(AIAppEvents.requestSendWithChat.subscribe(openHandler));
+
     return () => disposables.forEach(d => d.unsubscribe());
   }, [activeSidebarTab, view, workbench]);
 
@@ -367,15 +355,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         </div>
       </ViewBody>
 
-      {enableAI && (
-        <ViewSidebarTab
-          tabId="chat"
-          icon={<AiIcon />}
-          unmountOnInactive={false}
-        >
-          <EditorChatPanel editor={editorContainer} doc={doc.blockSuiteDoc} />
-        </ViewSidebarTab>
-      )}
+                
 
       <ViewSidebarTab tabId="properties" icon={<PropertyIcon />}>
         <Scrollable.Root className={styles.sidebarScrollArea}>

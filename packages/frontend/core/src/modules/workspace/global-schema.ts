@@ -1,5 +1,4 @@
-import { AIChatBlockSchema } from '@affine/core/blocksuite/ai/blocks/ai-chat-block/model';
-import { TranscriptionBlockSchema } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
+
 import { AffineSchemas } from '@blocksuite/affine/schemas';
 import { Schema } from '@blocksuite/affine/store';
 
@@ -10,8 +9,7 @@ export function getAFFiNEWorkspaceSchema() {
 
     _schema.register([
       ...AffineSchemas,
-      AIChatBlockSchema,
-      TranscriptionBlockSchema,
+      
     ]);
   }
 
