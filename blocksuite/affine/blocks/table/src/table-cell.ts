@@ -12,6 +12,7 @@ import { cssVarV2 } from '@blocksuite/affine-shared/theme';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import { IS_MAC } from '@blocksuite/global/env';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { insertInlineLatex } from '@blocksuite/affine-inline-latex';
 import {
   ArrowDownBigIcon,
   ArrowLeftBigIcon,
@@ -105,6 +106,67 @@ export class TableCell extends SignalWatcher(
       DefaultInlineManagerExtension.identifier
     );
   }
+  private _tryConvertLatex() {
+  const inlineEditor = this.inlineEditor;
+  const text = this.text;
+
+  if (!inlineEditor || !text) {
+    return false;
+  }
+
+  const inlineRange = inlineEditor.inlineRange$.value;
+  if (!inlineRange) {
+    return false;
+  }
+
+  // Only trigger when the cursor is collapsed.
+  if (inlineRange.length !== 0) {
+    return false;
+  }
+
+  const cursor = inlineRange.index;
+  const source = text.toString();
+
+  // Look behind the cursor for the most recent $$...$$
+  // and require the closing $$ to be exactly at the cursor.
+  const beforeCursor = source.slice(0, cursor);
+const match = /\$\$([\s\S]*)\$\$$/.exec(beforeCursor);
+
+  if (!match) {
+    return false;
+  }
+
+  const fullMatch = match[0];
+  if (!match[1]) return 
+  const latex = match[1].trim();
+
+  if (!latex) {
+    return false;
+  }
+
+  // Position where the opening $$ starts.
+  const start = cursor - fullMatch.length;
+
+  const table = this.closest<TableBlockComponent>('affine-table');
+  if (!table) {
+    return false;
+  }
+
+  // Remove "$$...$$" from the actual Y.Text.
+  text.delete(start, fullMatch.length);
+
+  // Put the cursor back at the location where "$$...$$" was.
+  inlineEditor.setInlineRange({
+    index: start,
+    length: 0,
+  });
+
+  // Insert the LaTeX inline node at that position.
+  table.std.command.exec(insertInlineLatex);
+
+  return true;
+}
+
 
   get topContenteditableElement() {
     return this.closest<TableBlockComponent>('affine-table')
@@ -138,8 +200,7 @@ export class TableCell extends SignalWatcher(
                   ].map(item =>
                     menu.action({
                       prefix: html`<div
-                        style="color: ${
-                          item.color ?? cssVarV2.layer.background.primary
+                        style="color: ${item.color ?? cssVarV2.layer.background.primary
                         };display: flex;align-items: center;justify-content: center;"
                       >
                         ${TextBackgroundDuotoneIcon}
@@ -158,17 +219,17 @@ export class TableCell extends SignalWatcher(
               }),
               ...(column.backgroundColor
                 ? [
-                    menu.action({
-                      name: 'Clear column style',
-                      prefix: CloseIcon(),
-                      select: () => {
-                        this.dataManager.setColumnBackgroundColor(
-                          column.columnId,
-                          undefined
-                        );
-                      },
-                    }),
-                  ]
+                  menu.action({
+                    name: 'Clear column style',
+                    prefix: CloseIcon(),
+                    select: () => {
+                      this.dataManager.setColumnBackgroundColor(
+                        column.columnId,
+                        undefined
+                      );
+                    },
+                  }),
+                ]
                 : []),
             ],
           }),
@@ -264,8 +325,7 @@ export class TableCell extends SignalWatcher(
                   ].map(item =>
                     menu.action({
                       prefix: html`<div
-                        style="color: ${
-                          item.color ?? cssVarV2.layer.background.primary
+                        style="color: ${item.color ?? cssVarV2.layer.background.primary
                         };display: flex;align-items: center;justify-content: center;"
                       >
                         ${TextBackgroundDuotoneIcon}
@@ -284,17 +344,17 @@ export class TableCell extends SignalWatcher(
               }),
               ...(row.backgroundColor
                 ? [
-                    menu.action({
-                      name: 'Clear row style',
-                      prefix: CloseIcon(),
-                      select: () => {
-                        this.dataManager.setRowBackgroundColor(
-                          row.rowId,
-                          undefined
-                        );
-                      },
-                    }),
-                  ]
+                  menu.action({
+                    name: 'Clear row style',
+                    prefix: CloseIcon(),
+                    select: () => {
+                      this.dataManager.setRowBackgroundColor(
+                        row.rowId,
+                        undefined
+                      );
+                    },
+                  }),
+                ]
                 : []),
             ],
           }),
@@ -376,8 +436,7 @@ export class TableCell extends SignalWatcher(
         items: [{ name: 'Default', color: undefined }, ...colorList].map(item =>
           menu.action({
             prefix: html`<div
-              style="color: ${
-                item.color ?? cssVarV2.layer.background.primary
+              style="color: ${item.color ?? cssVarV2.layer.background.primary
               };display: flex;align-items: center;justify-content: center;"
             >
               ${TextBackgroundDuotoneIcon}
@@ -460,11 +519,11 @@ export class TableCell extends SignalWatcher(
         data-testid="drag-column-handle"
         data-drag-column-id=${column.columnId}
         class=${classMap({
-          [columnOptionsStyle]: true,
-        })}
+      [columnOptionsStyle]: true,
+    })}
         style=${styleMap({
-          opacity: columnIndex === this.hoverColumnIndex$.value ? 1 : undefined,
-        })}
+      opacity: columnIndex === this.hoverColumnIndex$.value ? 1 : undefined,
+    })}
         @click=${openColumnOptions}
       >
         ${threePointerIcon()}
@@ -485,11 +544,11 @@ export class TableCell extends SignalWatcher(
         data-testid="drag-row-handle"
         data-drag-row-id=${row.rowId}
         class=${classMap({
-          [rowOptionsStyle]: true,
-        })}
+      [rowOptionsStyle]: true,
+    })}
         style=${styleMap({
-          opacity: rowIndex === this.hoverRowIndex$.value ? 1 : undefined,
-        })}
+      opacity: rowIndex === this.hoverRowIndex$.value ? 1 : undefined,
+    })}
         @click=${openRowOptions}
       >
         ${threePointerIcon(true)}
@@ -501,15 +560,13 @@ export class TableCell extends SignalWatcher(
       return nothing;
     }
     return html`
-      ${
-        this.rowIndex === 0
-          ? this.renderColumnOptions(this.column, this.columnIndex)
-          : nothing
+      ${this.rowIndex === 0
+        ? this.renderColumnOptions(this.column, this.columnIndex)
+        : nothing
       }
-      ${
-        this.columnIndex === 0
-          ? this.renderRowOptions(this.row, this.rowIndex)
-          : nothing
+      ${this.columnIndex === 0
+        ? this.renderRowOptions(this.row, this.rowIndex)
+        : nothing
       }
     `;
   }
@@ -656,8 +713,16 @@ export class TableCell extends SignalWatcher(
     if (e.key !== 'Escape' && e.key === 'Tab') {
       e.preventDefault();
       return;
+    };
+
+    if (e.key !== '$') {
+      return;
     }
+    queueMicrotask(() => {
+      this._tryConvertLatex();
+    });
   };
+
 
   override connectedCallback() {
     super.connectedCallback();
@@ -731,8 +796,8 @@ export class TableCell extends SignalWatcher(
       return html`<td class=${cellContainerStyle} style=${this.tdStyle()}>
         <div
           style=${styleMap({
-            padding: '8px 12px',
-          })}
+        padding: '8px 12px',
+      })}
         >
           <div style="height:22px"></div>
         </div>
@@ -743,11 +808,11 @@ export class TableCell extends SignalWatcher(
         data-row-id=${this.row?.rowId}
         data-column-id=${this.column?.columnId}
         @mouseenter=${() => {
-          this.tdMouseEnter(this.rowIndex, this.columnIndex);
-        }}
+        this.tdMouseEnter(this.rowIndex, this.columnIndex);
+      }}
         @mouseleave=${() => {
-          this.tdMouseLeave();
-        }}
+        this.tdMouseLeave();
+      }}
         @contextmenu=${this.onContextMenu}
         class=${cellContainerStyle}
         style=${this.tdStyle()}
@@ -757,9 +822,9 @@ export class TableCell extends SignalWatcher(
           data-disable-ask-ai
           data-not-block-text
           style=${styleMap({
-            minHeight: '22px',
-            padding: '8px 12px',
-          })}
+        minHeight: '22px',
+        padding: '8px 12px',
+      })}
           .yText="${this.text}"
           .inlineEventSource="${this.topContenteditableElement ?? nothing}"
           .attributesSchema="${this.inlineManager?.getSchema()}"
@@ -769,9 +834,9 @@ export class TableCell extends SignalWatcher(
           .readonly="${this.readonly}"
           .enableClipboard="${true}"
           .verticalScrollContainerGetter="${() =>
-            this.topContenteditableElement?.host
-              ? getViewportElement(this.topContenteditableElement.host)
-              : null}"
+        this.topContenteditableElement?.host
+          ? getViewportElement(this.topContenteditableElement.host)
+          : null}"
           data-parent-flavour="affine:table"
         ></rich-text>
         ${this.renderOptionsButton()} ${this.renderColumnIndicator()}
@@ -852,8 +917,8 @@ const threePointerIcon = (vertical: boolean = false) => {
     <div
       class=${threePointerIconStyle}
       style=${styleMap({
-        transform: vertical ? 'rotate(90deg)' : undefined,
-      })}
+    transform: vertical ? 'rotate(90deg)' : undefined,
+  })}
     >
       <div class=${threePointerIconDotStyle}></div>
       <div class=${threePointerIconDotStyle}></div>

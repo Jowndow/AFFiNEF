@@ -20,46 +20,61 @@ function closeSlashMenu() {
   globalAbortController.abort();
 }
 
-const showSlashMenu = debounce(
-  ({
+const showSlashMenu = ({
+  context,
+  config,
+  container = document.body,
+  abortController = new AbortController(),
+  configItemTransform,
+}: {
+  context: SlashMenuContext;
+  config: SlashMenuConfig;
+  container?: HTMLElement;
+  abortController?: AbortController;
+  configItemTransform: (item: SlashMenuItem) => SlashMenuItem;
+}) => {
+  globalAbortController = abortController;
+
+  const inlineEditor = getInlineEditorByModel(
+    context.std,
+    context.model
+  );
+
+  if (!inlineEditor) {
+    return;
+  }
+
+  const disposables = new DisposableGroup();
+
+  abortController.signal.addEventListener(
+    'abort',
+    () => disposables.dispose(),
+    { once: true }
+  );
+
+  const slashMenu = new SlashMenu(
+    inlineEditor,
+    abortController
+  );
+
+  slashMenu.context = context;
+
+  // This is likely the expensive operation.
+  slashMenu.items = buildSlashMenuItems(
+    typeof config.items === 'function'
+      ? config.items(context)
+      : config.items,
     context,
-    config,
-    container = document.body,
-    abortController = new AbortController(),
-    configItemTransform,
-  }: {
-    context: SlashMenuContext;
-    config: SlashMenuConfig;
-    container?: HTMLElement;
-    abortController?: AbortController;
-    configItemTransform: (item: SlashMenuItem) => SlashMenuItem;
-  }) => {
-    globalAbortController = abortController;
-    const disposables = new DisposableGroup();
-    abortController.signal.addEventListener('abort', () =>
-      disposables.dispose()
-    );
+    configItemTransform
+  );
 
-    const inlineEditor = getInlineEditorByModel(context.std, context.model);
-    if (!inlineEditor) return;
-    const slashMenu = new SlashMenu(inlineEditor, abortController);
-    disposables.add(() => slashMenu.remove());
-    slashMenu.context = context;
-    slashMenu.items = buildSlashMenuItems(
-      typeof config.items === 'function' ? config.items(context) : config.items,
-      context,
-      configItemTransform
-    );
+  disposables.add(() => slashMenu.remove());
 
-    // FIXME(Flrande): It is not a best practice,
-    // but merely a temporary measure for reusing previous components.
-    // Mount
-    container.append(slashMenu);
-    return slashMenu;
-  },
-  100,
-  { leading: true }
-);
+  container.append(slashMenu);
+
+  return slashMenu;
+};
+
 
 export class AffineSlashMenuWidget extends WidgetComponent {
   private readonly _getInlineEditor = (evt: CompositionEvent | InputEvent) => {
@@ -155,26 +170,19 @@ export class AffineSlashMenuWidget extends WidgetComponent {
 
   private readonly _onBeforeInput = (ctx: UIEventStateContext) => {
     const event = ctx.get('defaultState').event;
+
     if (!(event instanceof InputEvent)) return;
-
-    // Skip non-character inputs and IME composition (handled by _onCompositionEnd)
     if (event.data === null || event.isComposing) return;
-
-    // Quick check: only proceed if the input contains the trigger key
     if (!event.data.includes(AFFINE_SLASH_MENU_TRIGGER_KEY)) return;
 
     const inlineEditor = this._getInlineEditor(event);
     if (!inlineEditor) return;
 
-    // Wait for the input to be processed, then handle it
-    // Pass true because after waitForUpdate(), the range is already synced
-    inlineEditor
-      .waitForUpdate()
-      .then(() => {
-        this._handleInput(inlineEditor, true);
-      })
-      .catch(console.error);
+    requestAnimationFrame(() => {
+      this._handleInput(inlineEditor, true);
+    });
   };
+
 
   get config() {
     return this.std.get(SlashMenuExtension).config;
